@@ -1,0 +1,312 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+
+model User {
+  id            String    @id @default(cuid())
+  name          String
+  email         String    @unique
+  emailVerified Boolean   @default(false)
+  image         String?
+
+  role          String?   // admin, cashier
+  banned        Boolean?  @default(false)
+  banReason     String?
+  banExpires    DateTime?
+
+  sessions      Session[]
+  accounts      Account[]
+
+  categories    Category[]
+  products      Product[]
+  sales         Sale[]
+  purchases     PurchaseOrder[]
+  shifts        Shift[]
+
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@map("user")
+}
+
+model Session {
+  id        String   @id @default(cuid())
+  expiresAt DateTime
+  token     String   @unique
+
+  ipAddress String?
+  userAgent String?
+
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+  @@map("session")
+}
+
+model Account {
+  id                    String   @id @default(cuid())
+  accountId             String
+  providerId            String
+
+  userId                String
+  user                  User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  accessToken           String?
+  refreshToken          String?
+  idToken               String?
+
+  accessTokenExpiresAt  DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope                 String?
+  password              String?
+
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  @@index([userId])
+  @@map("account")
+}
+
+model Verification {
+  id         String   @id @default(cuid())
+  identifier String
+  value      String
+  expiresAt  DateTime
+
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([identifier])
+  @@map("verification")
+}
+
+//
+// -------------------------------
+// MASTER DATA
+// -------------------------------
+//
+
+model Category {
+  id          String    @id @default(cuid())
+  name        String    @unique
+  description String?
+
+  createdBy   String
+  creator     User      @relation(fields: [createdBy], references: [id])
+
+  products    Product[]
+
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@map("category")
+}
+
+model Product {
+  id          String    @id @default(cuid())
+  name        String
+  description String?
+  price       Float
+  taxRate     Float     @default(0.11)
+
+  stock       Int       @default(0)
+  sku         String    @unique
+  barcode     String?   @unique
+  image       String?
+
+  categoryId  String
+  category    Category  @relation(fields: [categoryId], references: [id])
+
+  createdBy   String
+  creator     User      @relation(fields: [createdBy], references: [id])
+
+  isActive    Boolean   @default(true)
+
+  saleItems     SaleItem[]
+  purchaseItems PurchaseItem[]
+
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([categoryId])
+  @@index([sku])
+  @@index([barcode])
+  @@map("product")
+}
+//
+// -------------------------------
+// CUSTOMER & SUPPLIER
+// -------------------------------
+//
+
+model Customer {
+  id        String   @id @default(cuid())
+  name      String
+  phone     String?
+  email     String?
+  address   String?
+
+  sales     Sale[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("customer")
+}
+
+model Supplier {
+  id        String   @id @default(cuid())
+  name      String
+  phone     String?
+  email     String?
+  address   String?
+
+  purchases PurchaseOrder[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("supplier")
+}
+
+//
+// -------------------------------
+// PURCHASE (STOK MASUK)
+// -------------------------------
+//
+
+model PurchaseOrder {
+  id          String        @id @default(cuid())
+  invoice     String        @unique
+  supplierId  String
+  supplier    Supplier      @relation(fields: [supplierId], references: [id])
+
+  createdBy   String
+  creator     User          @relation(fields: [createdBy], references: [id])
+
+  items       PurchaseItem[]
+  total       Float
+
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  @@map("purchase_order")
+}
+
+model PurchaseItem {
+  id          String        @id @default(cuid())
+  purchaseId  String
+  purchase    PurchaseOrder @relation(fields: [purchaseId], references: [id])
+
+  productId   String
+  product     Product       @relation(fields: [productId], references: [id])
+
+  quantity    Int
+  cost        Float  
+  subtotal    Float
+
+  @@map("purchase_item")
+}
+
+
+// -------------------------------
+// SALES (TRANSAKSI PENJUALAN)
+// -------------------------------
+
+model Sale {
+  id          String     @id @default(cuid())
+  invoice     String     @unique
+
+  cashierId   String
+  cashier     User       @relation(fields: [cashierId], references: [id])
+
+  customerId  String?
+  customer    Customer?  @relation(fields: [customerId], references: [id])
+
+  total       Float      // Total include tax
+  subtotal    Float      // Total before tax
+  tax         Float      // Total PPN
+
+  paymentType String     // cash | qris | transfer
+  paid        Float
+  change      Float      @default(0)
+
+  items       SaleItem[]
+  payments    Payment[]
+
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  @@map("sale")
+}
+
+model SaleItem {
+  id        String   @id @default(cuid())
+
+  saleId    String
+  sale      Sale     @relation(fields: [saleId], references: [id])
+
+  productId String
+  product   Product  @relation(fields: [productId], references: [id])
+
+  quantity  Int
+  price     Float     // harga per item sebelum pajak
+  taxRate   Float     // ambil otomatis dari product.taxRate
+  taxAmount Float     // pajak total item = price * qty * taxRate
+
+  subtotal  Float     // include tax
+
+  @@map("sale_item")
+}
+
+
+model Payment {
+  id        String   @id @default(cuid())
+
+  saleId    String
+  sale      Sale     @relation(fields: [saleId], references: [id])
+
+  method    String   // cash | qris | transfer
+  amount    Float
+  reference String?  // No. transfer, QRIS reference number
+
+  createdAt DateTime @default(now())
+
+  @@map("payment")
+}
+
+//
+// -------------------------------
+// SHIFT (KASIR OPEN / CLOSE)
+// -------------------------------
+//
+
+model Shift {
+  id        String   @id @default(cuid())
+
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+
+  openAt    DateTime @default(now())
+  closeAt   DateTime?
+  openingCash Float
+  closingCash Float?
+
+  @@map("shift")
+}

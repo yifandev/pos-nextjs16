@@ -1,0 +1,20 @@
+import { OTPForm } from "@/components/otp-form";
+import { getRoleRedirectUrl, getServerSession } from "@/hooks/auth-helpers";
+import { redirect } from "next/navigation";
+
+export default async function OTPPage() {
+  const session = await getServerSession();
+
+  // Jika sudah login, redirect ke dashboard sesuai role
+  if (session) {
+    const redirectUrl = getRoleRedirectUrl(session.user.role);
+    redirect(redirectUrl);
+  }
+  return (
+    <div className="bg-background flex min-h-svh flex-col items-center justify-center gap-6 p-6 md:p-10">
+      <div className="w-full max-w-sm">
+        <OTPForm />
+      </div>
+    </div>
+  );
+}
