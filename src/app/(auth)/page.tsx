@@ -2,6 +2,8 @@ import { LoginForm } from "@/components/login-form";
 import { getRoleRedirectUrl, getServerSession } from "@/hooks/auth-helpers";
 import { redirect } from "next/navigation";
 
+export const dynamic = "force-dynamic";
+
 export default async function Auth() {
   const session = await getServerSession();
 

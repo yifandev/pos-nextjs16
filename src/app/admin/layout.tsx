@@ -17,6 +17,8 @@ import { Separator } from "@/components/ui/separator";
 import { LogoutButton } from "@/components/logout-button";
 import { AdminSidebar } from "@/components/sidebar/admin/app-sidebar";
 
+export const dynamic = "force-dynamic";
+
 /**
  * Admin layout with authentication check
  * Only accessible by users with 'admin' role

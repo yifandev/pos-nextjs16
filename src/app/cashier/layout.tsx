@@ -17,6 +17,8 @@ import { Separator } from "@/components/ui/separator";
 import { CashierSidebar } from "@/components/sidebar/cashier/cashier-sidebar";
 import { LogoutButton } from "@/components/logout-button";
 
+export const dynamic = "force-dynamic";
+
 /**
  * Cashier layout with authentication check
  * Accessible by users with 'cashier' or 'admin' role

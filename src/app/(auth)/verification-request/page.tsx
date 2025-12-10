@@ -2,6 +2,8 @@ import { OTPForm } from "@/components/otp-form";
 import { getRoleRedirectUrl, getServerSession } from "@/hooks/auth-helpers";
 import { redirect } from "next/navigation";
 
+export const dynamic = "force-dynamic";
+
 export default async function OTPPage() {
   const session = await getServerSession();
 
