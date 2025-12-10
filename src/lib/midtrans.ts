@@ -16,17 +16,27 @@ const core = new midtransClient.CoreApi({
 
 export { snap, core };
 
+// BASE URL MIDTRANS (FIXED)
+const MIDTRANS_BASE_URL =
+  process.env.MIDTRANS_IS_PRODUCTION === "true"
+    ? "https://api.midtrans.com"
+    : "https://api.sandbox.midtrans.com";
+
+// Authorization header (FIXED)
+const AUTH_HEADER = {
+  Authorization:
+    "Basic " +
+    Buffer.from(process.env.MIDTRANS_SERVER_KEY + ":").toString("base64"),
+  Accept: "application/json",
+  "Content-Type": "application/json",
+};
+
 /**
  * Create Midtrans transaction token
- * @param orderId - Unique order ID
- * @param grossAmount - Total amount
- * @param customerDetails - Customer information
- * @param itemDetails - Items detail
- * @returns Transaction token
  */
 export async function createTransactionToken(params: {
   orderId: string;
-  grossAmount?: number; // Jadikan optional
+  grossAmount?: number;
   customerDetails?: {
     firstName?: string;
     lastName?: string;
@@ -34,7 +44,6 @@ export async function createTransactionToken(params: {
     phone?: string;
   };
   itemDetails: Array<{
-    // Wajibkan itemDetails
     id: string;
     price: number;
     quantity: number;
@@ -43,27 +52,15 @@ export async function createTransactionToken(params: {
   enabledPayments?: string[];
 }) {
   try {
-    // Hitung total dari itemDetails
     const calculatedAmount = params.itemDetails.reduce(
       (total, item) => total + item.price * item.quantity,
       0
     );
 
-    // Gunakan grossAmount dari parameter atau hitung dari itemDetails
-    const grossAmount = params.grossAmount || calculatedAmount;
-
-    // Validasi konsistensi
-    if (
-      params.grossAmount &&
-      Math.abs(params.grossAmount - calculatedAmount) > 100
-    ) {
-      console.warn(`Warning: grossAmount mismatch for order ${params.orderId}`);
-    }
-
     const parameter = {
       transaction_details: {
         order_id: params.orderId,
-        gross_amount: calculatedAmount, // Gunakan calculatedAmount
+        gross_amount: calculatedAmount,
       },
       customer_details: params.customerDetails,
       item_details: params.itemDetails,
@@ -91,17 +88,12 @@ export async function createTransactionToken(params: {
 }
 
 /**
- * Charge with QRIS
- * @param orderId - Unique order ID
- * @param grossAmount - Total amount
- * @returns QRIS string and actions
+ * Charge QRIS
  */
-// Update fungsi chargeQRIS untuk menghitung gross_amount secara otomatis jika tidak sesuai
 export async function chargeQRIS(params: {
   orderId: string;
-  grossAmount?: number; // Jadikan optional
+  grossAmount?: number;
   itemDetails: Array<{
-    // Wajibkan itemDetails
     id: string;
     price: number;
     quantity: number;
@@ -109,33 +101,16 @@ export async function chargeQRIS(params: {
   }>;
 }) {
   try {
-    // Hitung total dari itemDetails
     const calculatedAmount = params.itemDetails.reduce(
       (total, item) => total + item.price * item.quantity,
       0
     );
 
-    // Gunakan grossAmount dari parameter atau hitung dari itemDetails
-    const grossAmount = params.grossAmount || calculatedAmount;
-
-    // Validasi jika grossAmount diberikan manual harus sama dengan perhitungan
-    if (
-      params.grossAmount &&
-      Math.abs(params.grossAmount - calculatedAmount) > 100
-    ) {
-      // Toleransi 100
-      console.warn(
-        `Warning: grossAmount (${params.grossAmount}) tidak sama dengan total itemDetails (${calculatedAmount})`
-      );
-      // Anda bisa memutuskan untuk menggunakan yang mana
-      // Saat ini akan menggunakan calculatedAmount untuk menghindari error
-    }
-
     const parameter = {
       payment_type: "qris",
       transaction_details: {
         order_id: params.orderId,
-        gross_amount: calculatedAmount, // Gunakan calculatedAmount
+        gross_amount: calculatedAmount,
       },
       item_details: params.itemDetails,
       qris: {
@@ -165,18 +140,13 @@ export async function chargeQRIS(params: {
 }
 
 /**
- * Charge with Bank Transfer
- * @param orderId - Unique order ID
- * @param grossAmount - Total amount
- * @param bank - Bank code (bca, bni, bri, permata)
- * @returns VA number and bank details
+ * Charge Bank Transfer
  */
 export async function chargeBankTransfer(params: {
   orderId: string;
-  grossAmount?: number; // Jadikan optional
+  grossAmount?: number;
   bank: "bca" | "bni" | "bri" | "permata";
   itemDetails: Array<{
-    // Wajibkan itemDetails
     id: string;
     price: number;
     quantity: number;
@@ -184,27 +154,16 @@ export async function chargeBankTransfer(params: {
   }>;
 }) {
   try {
-    // Hitung total dari itemDetails
     const calculatedAmount = params.itemDetails.reduce(
       (total, item) => total + item.price * item.quantity,
       0
     );
 
-    // Validasi
-    if (
-      params.grossAmount &&
-      Math.abs(params.grossAmount - calculatedAmount) > 100
-    ) {
-      console.warn(
-        `Warning: grossAmount mismatch for bank transfer order ${params.orderId}`
-      );
-    }
-
     const parameter = {
       payment_type: "bank_transfer",
       transaction_details: {
         order_id: params.orderId,
-        gross_amount: calculatedAmount, // Gunakan calculatedAmount
+        gross_amount: calculatedAmount,
       },
       item_details: params.itemDetails,
       bank_transfer: {
@@ -214,7 +173,6 @@ export async function chargeBankTransfer(params: {
 
     const charge = await core.charge(parameter);
 
-    // Get VA number based on bank
     let vaNumber = "";
     if (
       params.bank === "bca" ||
@@ -249,52 +207,48 @@ export async function chargeBankTransfer(params: {
 }
 
 /**
- * Check transaction status
- * @param orderId - Order ID to check
- * @returns Transaction status
+ * Check transaction status (FIXED – pakai HTTP request langsung)
  */
 export async function checkTransactionStatus(orderId: string) {
   try {
-    const status = await core.transaction.status(orderId);
+    const res = await fetch(`${MIDTRANS_BASE_URL}/v2/${orderId}/status`, {
+      method: "GET",
+      headers: AUTH_HEADER,
+    });
+
+    const status = await res.json();
 
     return {
       success: true,
-      data: {
-        orderId: status.order_id,
-        transactionStatus: status.transaction_status,
-        fraudStatus: status.fraud_status,
-        grossAmount: status.gross_amount,
-        paymentType: status.payment_type,
-        transactionTime: status.transaction_time,
-      },
+      data: status,
     };
   } catch (error) {
     console.error("Midtrans check status error:", error);
     return {
       success: false,
-      error:
-        error instanceof Error
-          ? error.message
-          : "Failed to check transaction status",
+      error: error instanceof Error ? error.message : "Failed to check status",
     };
   }
 }
 
 /**
- * Cancel transaction
- * @param orderId - Order ID to cancel
- * @returns Cancellation result
+ * Cancel transaction (FIXED – pakai HTTP request langsung)
  */
 export async function cancelTransaction(orderId: string) {
   try {
-    const result = await core.transaction.cancel(orderId);
+    const res = await fetch(`${MIDTRANS_BASE_URL}/v2/${orderId}/cancel`, {
+      method: "POST",
+      headers: AUTH_HEADER,
+    });
+
+    const result = await res.json();
 
     return {
       success: true,
       data: result,
     };
   } catch (error) {
-    console.error("Midtrans cancel transaction error:", error);
+    console.error("Midtrans cancel error:", error);
     return {
       success: false,
       error:
@@ -304,5 +258,5 @@ export async function cancelTransaction(orderId: string) {
 }
 
 // Dummy BRI ATM for cash payment
-export const DUMMY_BRI_ATM = "1234567890123456"; // 16 digit dummy ATM number
+export const DUMMY_BRI_ATM = "1234567890123456";
 export const DUMMY_BRI_BANK_NAME = "BRI (Bank Rakyat Indonesia)";
