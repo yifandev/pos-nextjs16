@@ -1,7 +1,20 @@
 "use client";
 
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { formatCurrency } from "@/lib/utils/format";
 import { Trophy, Medal, Award } from "lucide-react";
@@ -16,7 +29,9 @@ interface CashierPerformanceTableProps {
   }>;
 }
 
-export function CashierPerformanceTable({ data }: CashierPerformanceTableProps) {
+export function CashierPerformanceTable({
+  data,
+}: CashierPerformanceTableProps) {
   const getRankIcon = (index: number) => {
     switch (index) {
       case 0:
@@ -56,7 +71,9 @@ export function CashierPerformanceTable({ data }: CashierPerformanceTableProps) 
                     <span className="font-medium">#{index + 1}</span>
                   </div>
                 </TableCell>
-                <TableCell className="font-medium">{cashier.cashierName}</TableCell>
+                <TableCell className="font-medium">
+                  {cashier.cashierName}
+                </TableCell>
                 <TableCell className="text-right">
                   <Badge variant="secondary">{cashier.transactionCount}</Badge>
                 </TableCell>
@@ -70,7 +87,10 @@ export function CashierPerformanceTable({ data }: CashierPerformanceTableProps) 
             ))}
             {data.length === 0 && (
               <TableRow>
-                <TableCell colSpan={5} className="text-center text-muted-foreground py-8">
+                <TableCell
+                  colSpan={5}
+                  className="text-center text-muted-foreground py-8"
+                >
                   Tidak ada data
                 </TableCell>
               </TableRow>
