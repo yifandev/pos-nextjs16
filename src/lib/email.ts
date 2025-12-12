@@ -7,7 +7,7 @@ import nodemailer from "nodemailer";
 export const emailTransporter = nodemailer.createTransport({
   host: process.env.EMAIL_HOST || "smtp.gmail.com",
   port: parseInt(process.env.EMAIL_PORT || "587"),
-  secure: process.env.EMAIL_PORT === "465", // true for 465, false for other ports
+  secure: process.env.EMAIL_PORT === "465",
   auth: {
     user: process.env.EMAIL_USER,
     pass: process.env.EMAIL_PASSWORD,
@@ -18,6 +18,321 @@ interface SendOTPEmailProps {
   email: string;
   otp: string;
   type?: "sign-in" | "email-verification" | "password-reset";
+}
+
+/**
+ * Generate a modern email template with coffee shop theme
+ */
+function generateEmailTemplate(
+  otp: string,
+  type?: SendOTPEmailProps["type"]
+): string {
+  const subject = type
+    ? `Your ${type.replace("-", " ")} Code - POS Coffee Shop`
+    : "Your Verification Code - POS Coffee Shop";
+
+  const contextText = type
+    ? `This code is for ${type.replace("-", " ")}.`
+    : "Thank you for choosing our coffee shop.";
+
+  const coffeeIcon = "☕";
+  const expiryMinutes = 10;
+
+  return `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Verification Code - POS Coffee Shop</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    /* Modern Reset & Base Styles */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      line-height: 1.6;
+      color: #251a0d; /* Deep coffee brown */
+      background-color: #f9f5f0; /* Cream background */
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+    
+    .email-container {
+      max-width: 600px;
+      margin: 0 auto;
+      padding: 40px 20px;
+    }
+    
+    /* Modern Header */
+    .email-header {
+      background: linear-gradient(135deg, #5d4037 0%, #3e2723 100%); /* Dark coffee gradient */
+      padding: 40px 30px;
+      border-radius: 20px 20px 0 0;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+    
+    .email-header::before {
+      content: "☕☕☕";
+      position: absolute;
+      top: 20px;
+      left: 20px;
+      font-size: 24px;
+      opacity: 0.3;
+    }
+    
+    .email-header::after {
+      content: "☕☕☕";
+      position: absolute;
+      bottom: 20px;
+      right: 20px;
+      font-size: 24px;
+      opacity: 0.3;
+    }
+    
+    .brand {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 15px;
+      margin-bottom: 15px;
+    }
+    
+    .coffee-icon {
+      font-size: 32px;
+      color: #d7ccc8;
+    }
+    
+    .brand-name {
+      color: #fff;
+      font-size: 28px;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+    }
+    
+    .brand-tagline {
+      color: #d7ccc8;
+      font-size: 16px;
+      font-weight: 400;
+      opacity: 0.9;
+    }
+    
+    /* Content Area */
+    .email-content {
+      background: #fff;
+      padding: 50px 40px;
+      border-radius: 0 0 20px 20px;
+      box-shadow: 0 10px 40px rgba(93, 64, 55, 0.08);
+      position: relative;
+    }
+    
+    .content-header {
+      text-align: center;
+      margin-bottom: 40px;
+    }
+    
+    .content-title {
+      color: #3e2723; /* Dark coffee */
+      font-size: 28px;
+      font-weight: 700;
+      margin-bottom: 15px;
+    }
+    
+    .content-subtitle {
+      color: #795548; /* Medium brown */
+      font-size: 16px;
+      line-height: 1.6;
+      max-width: 500px;
+      margin: 0 auto;
+    }
+    
+    /* OTP Card */
+    .otp-card {
+      background: linear-gradient(135deg, #f9f5f0 0%, #fff 100%);
+      border: 2px solid #d7ccc8; /* Light caramel border */
+      border-radius: 16px;
+      padding: 40px 30px;
+      margin: 40px 0;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+    
+    .otp-card::before {
+      content: "";
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 4px;
+      background: linear-gradient(90deg, #5d4037 0%, #795548 50%, #8d6e63 100%);
+    }
+    
+    .otp-label {
+      color: #795548;
+      font-size: 14px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      margin-bottom: 15px;
+      display: block;
+    }
+    
+    .otp-code {
+      font-size: 48px;
+      font-weight: 800;
+      color: #3e2723;
+      letter-spacing: 10px;
+      font-family: 'Courier New', monospace;
+      margin: 20px 0;
+      text-shadow: 2px 2px 4px rgba(0,0,0,0.05);
+    }
+    
+    .otp-timer {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: #fff8f0;
+      padding: 8px 20px;
+      border-radius: 50px;
+      font-size: 14px;
+      color: #795548;
+      margin-top: 20px;
+    }
+    
+    .timer-icon {
+      font-size: 16px;
+    }
+    
+    
+    /* Footer */
+    .email-footer {
+      border-top: 1px solid #e8e0d9;
+      margin-top: 50px;
+      padding-top: 30px;
+      text-align: center;
+    }
+    
+    .footer-text {
+      color: #8d6e63;
+      font-size: 14px;
+      margin-bottom: 20px;
+    }
+    
+    .footer-links {
+      display: flex;
+      justify-content: center;
+      gap: 30px;
+      margin-bottom: 30px;
+    }
+    
+    .footer-link {
+      color: #795548;
+      text-decoration: none;
+      font-size: 14px;
+      transition: color 0.2s;
+    }
+    
+    .footer-link:hover {
+      color: #5d4037;
+      text-decoration: underline;
+    }
+    
+    .copyright {
+      color: #a1887f;
+      font-size: 12px;
+      margin-top: 30px;
+    }
+    
+    /* Responsive Design */
+    @media (max-width: 600px) {
+      .email-container {
+        padding: 20px 15px;
+      }
+      
+      .email-header {
+        padding: 30px 20px;
+      }
+      
+      .email-content {
+        padding: 30px 20px;
+      }
+      
+      .content-title {
+        font-size: 24px;
+      }
+      
+      .otp-code {
+        font-size: 36px;
+        letter-spacing: 6px;
+      }
+      
+      .footer-links {
+        flex-direction: column;
+        gap: 15px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="email-container">
+    <!-- Header -->
+    <div class="email-header">
+      <div class="brand">
+        <div class="coffee-icon">☕</div>
+        <div>
+          <div class="brand-name">POS Coffee Shop</div>
+          <div class="brand-tagline">Point Of sales Project</div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Content -->
+    <div class="email-content">
+      <div class="content-header">
+        <h1 class="content-title">Your Verification Code</h1>
+        <p class="content-subtitle">
+          ${contextText} Please use the verification code below to complete your authentication process.
+        </p>
+      </div>
+      
+      <!-- OTP Card -->
+      <div class="otp-card">
+        <span class="otp-label">Verification Code</span>
+        <div class="otp-code">${otp}</div>
+        <div class="otp-timer">
+          <span class="timer-icon">⏳</span>
+          <span>Expires in ${expiryMinutes} minutes</span>
+        </div>
+      </div>
+      
+      <!-- Footer -->
+      <div class="email-footer">
+        <div class="footer-text">
+          Need help? Our support team is here for you.
+        </div>
+        <div class="footer-links">
+          <a href="#" class="footer-link">Visit Our Website</a>
+          <a href="#" class="footer-link">Contact Support</a>
+          <a href="#" class="footer-link">Privacy Policy</a>
+        </div>
+        <div class="copyright">
+          © ${new Date().getFullYear()} POS Coffee Shop. All rights reserved.<br>
+          Brewed with ☕ and ❤️
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
+  `;
 }
 
 /**
@@ -36,49 +351,29 @@ export async function sendOTPEmail(
       ? `Your ${type.replace("-", " ")} Code - POS Coffee Shop`
       : "Your Verification Code - POS Coffee Shop";
 
-    const contextText = type
-      ? `This code is for ${type.replace("-", " ")}.`
-      : "";
+    const textContent = `
+POS Coffee Shop - Verification Code
+
+Your verification code is: ${otp}
+
+This code is valid for 10 minutes. 
+Please enter this code in the application to complete your ${
+      type ? type.replace("-", " ") : "verification"
+    } process.
+
+If you didn't request this code, please ignore this email.
+
+Need help? Contact our support team.
+
+© ${new Date().getFullYear()} POS Coffee Shop
+    `.trim();
 
     await emailTransporter.sendMail({
       from: process.env.EMAIL_FROM || process.env.EMAIL_USER,
       to: email,
       subject: subject,
-      html: `
-        <!DOCTYPE html>
-        <html>
-          <head>
-            <meta charset="utf-8">
-            <meta name="viewport" content="width=device-width, initial-scale=1.0">
-            <title>Verification Code</title>
-          </head>
-          <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
-            <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
-              <h1 style="color: white; margin: 0;">POS Coffee Shop</h1>
-            </div>
-            <div style="background: #f9f9f9; padding: 30px; border-radius: 0 0 10px 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
-              <h2 style="color: #333; margin-top: 0;">Your Verification Code</h2>
-              <p style="font-size: 16px; color: #666;">
-                ${contextText ? contextText : "Thank you for logging in."} 
-                Please use the following verification code to complete your authentication:
-              </p>
-              <div style="background: white; border: 2px dashed #667eea; border-radius: 8px; padding: 20px; margin: 30px 0; text-align: center;">
-                <p style="font-size: 14px; color: #666; margin: 0 0 10px 0;">Your verification code is:</p>
-                <p style="font-size: 36px; font-weight: bold; color: #667eea; letter-spacing: 8px; margin: 0;">${otp}</p>
-              </div>
-              <p style="font-size: 14px; color: #666;">
-                <strong>Important:</strong> This code will expire in <strong>10 minutes</strong>. 
-                If you didn't request this code, please ignore this email.
-              </p>
-              <hr style="border: none; border-top: 1px solid #ddd; margin: 30px 0;">
-              <p style="font-size: 12px; color: #999; text-align: center; margin: 0;">
-                © ${new Date().getFullYear()} POS Coffee Shop. All rights reserved.
-              </p>
-            </div>
-          </body>
-        </html>
-      `,
-      text: `Your verification code is: ${otp}\n\n${contextText}\n\nThis code will expire in 10 minutes.\n\nIf you didn't request this code, please ignore this email.`,
+      html: generateEmailTemplate(otp, type),
+      text: textContent,
     });
     console.log(
       `OTP email sent successfully to ${email} (type: ${type || "general"})`
