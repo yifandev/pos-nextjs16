@@ -3,7 +3,7 @@
 import * as React from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Calendar, Download, FileSpreadsheet, FileText } from "lucide-react";
+import { Calendar, FileSpreadsheet, FileText } from "lucide-react";
 import {
   Select,
   SelectContent,
@@ -12,7 +12,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
-export type PeriodFilter = 'today' | 'week' | 'month' | 'year' | 'custom';
+export type PeriodFilter = "today" | "week" | "month" | "year" | "custom";
 
 interface AnalyticsFiltersProps {
   period: PeriodFilter;
@@ -35,7 +35,11 @@ export function AnalyticsFilters({
         <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
           <div className="flex items-center gap-3">
             <Calendar className="h-5 w-5 text-muted-foreground" />
-            <Select value={period} onValueChange={onPeriodChange} disabled={isLoading}>
+            <Select
+              value={period}
+              onValueChange={onPeriodChange}
+              disabled={isLoading}
+            >
               <SelectTrigger className="w-[180px]">
                 <SelectValue placeholder="Pilih periode" />
               </SelectTrigger>

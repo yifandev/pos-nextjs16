@@ -47,6 +47,11 @@ const data = {
       url: "/cashier/shift",
       icon: Clock,
     },
+    {
+      title: "Pengaturan Akun",
+      url: "/cashier/setting",
+      icon: Clock,
+    },
   ],
 };
 

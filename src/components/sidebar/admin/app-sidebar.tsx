@@ -5,13 +5,10 @@ import { usePathname } from "next/navigation";
 import {
   LayoutDashboard,
   Package,
-  Layers,
-  CreditCard,
   BarChart3,
   Settings2,
   Users,
   ShoppingCart,
-  TrendingUp,
   FolderTree,
   History,
   UserCog,

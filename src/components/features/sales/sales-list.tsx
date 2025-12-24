@@ -15,10 +15,18 @@ import { getSales, getSale } from "@/actions/sale.actions";
 import { SaleWithDetails } from "@/types";
 import { formatCurrency, formatDateTime } from "@/lib/utils/format";
 import { toast } from "sonner";
-import { Eye, FileText, CreditCard, Wallet, Smartphone, Download, FileSpreadsheet } from "lucide-react";
-import * as XLSX from 'xlsx';
-import jsPDF from 'jspdf';
-import autoTable from 'jspdf-autotable';
+import {
+  Eye,
+  FileText,
+  CreditCard,
+  Wallet,
+  Smartphone,
+  Download,
+  FileSpreadsheet,
+} from "lucide-react";
+import * as XLSX from "xlsx";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
 
 interface SalesListProps {
   viewMode?: "admin" | "cashier";
@@ -58,59 +66,64 @@ export function SalesListUpdated({ viewMode = "admin" }: SalesListProps) {
 
   const handleExportExcel = () => {
     try {
-      const exportData = sales.map(sale => ({
-        'Invoice': sale.invoice,
-        'Tanggal': formatDateTime(sale.createdAt),
-        'Kasir': sale.cashier.name,
-        'Pelanggan': sale.customer?.name || '-',
-        'Total Item': sale.items.length,
-        'Subtotal': sale.subtotal,
-        'Pajak': sale.tax,
-        'Total': sale.total,
-        'Metode Pembayaran': sale.paymentType,
-        'Dibayar': sale.paid,
-        'Kembalian': sale.change,
+      const exportData = sales.map((sale) => ({
+        Invoice: sale.invoice,
+        Tanggal: formatDateTime(sale.createdAt),
+        Kasir: sale.cashier.name,
+        Pelanggan: sale.customer?.name || "-",
+        "Total Item": sale.items.length,
+        Subtotal: sale.subtotal,
+        Pajak: sale.tax,
+        Total: sale.total,
+        "Metode Pembayaran": sale.paymentType,
+        Dibayar: sale.paid,
+        Kembalian: sale.change,
       }));
 
       const ws = XLSX.utils.json_to_sheet(exportData);
       const wb = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(wb, ws, 'Penjualan');
+      XLSX.utils.book_append_sheet(wb, ws, "Penjualan");
 
       // Auto-size columns
       const maxWidth = 50;
-      const colWidths = Object.keys(exportData[0] || {}).map(key => {
+      const colWidths = Object.keys(exportData[0] || {}).map((key) => {
         const maxLength = Math.max(
           key.length,
-          ...exportData.map(row => String(row[key as keyof typeof row] || '').length)
+          ...exportData.map(
+            (row) => String(row[key as keyof typeof row] || "").length
+          )
         );
         return { wch: Math.min(maxLength + 2, maxWidth) };
       });
-      ws['!cols'] = colWidths;
+      ws["!cols"] = colWidths;
 
-      XLSX.writeFile(wb, `sales-report-${new Date().toISOString().split('T')[0]}.xlsx`);
+      XLSX.writeFile(
+        wb,
+        `sales-report-${new Date().toISOString().split("T")[0]}.xlsx`
+      );
       toast.success("Data berhasil diexport ke Excel");
     } catch (error) {
-      console.error('Export error:', error);
+      console.error("Export error:", error);
       toast.error("Gagal export data");
     }
   };
 
   const handleExportPDF = () => {
     try {
-      const doc = new jsPDF('landscape');
-      
+      const doc = new jsPDF("landscape");
+
       doc.setFontSize(16);
-      doc.text('Laporan Penjualan', 14, 15);
-      
+      doc.text("Laporan Penjualan", 14, 15);
+
       doc.setFontSize(10);
       doc.text(`Tanggal: ${formatDateTime(new Date())}`, 14, 22);
       doc.text(`Total Transaksi: ${sales.length}`, 14, 27);
 
-      const tableData = sales.map(sale => [
+      const tableData = sales.map((sale) => [
         sale.invoice,
         formatDateTime(sale.createdAt),
         sale.cashier.name,
-        sale.customer?.name || '-',
+        sale.customer?.name || "-",
         sale.items.length.toString(),
         formatCurrency(sale.total),
         sale.paymentType,
@@ -118,9 +131,19 @@ export function SalesListUpdated({ viewMode = "admin" }: SalesListProps) {
 
       autoTable(doc, {
         startY: 35,
-        head: [['Invoice', 'Tanggal', 'Kasir', 'Pelanggan', 'Items', 'Total', 'Pembayaran']],
+        head: [
+          [
+            "Invoice",
+            "Tanggal",
+            "Kasir",
+            "Pelanggan",
+            "Items",
+            "Total",
+            "Pembayaran",
+          ],
+        ],
         body: tableData,
-        theme: 'grid',
+        theme: "grid",
         headStyles: { fillColor: [41, 128, 185] },
         styles: { fontSize: 8 },
       });
@@ -128,14 +151,14 @@ export function SalesListUpdated({ viewMode = "admin" }: SalesListProps) {
       // Add summary
       const finalY = (doc as any).lastAutoTable.finalY + 10;
       const totalRevenue = sales.reduce((sum, sale) => sum + sale.total, 0);
-      
+
       doc.setFontSize(10);
       doc.text(`Total Pendapatan: ${formatCurrency(totalRevenue)}`, 14, finalY);
 
-      doc.save(`sales-report-${new Date().toISOString().split('T')[0]}.pdf`);
+      doc.save(`sales-report-${new Date().toISOString().split("T")[0]}.pdf`);
       toast.success("Data berhasil diexport ke PDF");
     } catch (error) {
-      console.error('Export error:', error);
+      console.error("Export error:", error);
       toast.error("Gagal export data");
     }
   };
@@ -172,7 +195,11 @@ export function SalesListUpdated({ viewMode = "admin" }: SalesListProps) {
     {
       header: "Pelanggan",
       cell: (item) => (
-        <div>{item.customer?.name || <span className="text-muted-foreground">-</span>}</div>
+        <div>
+          {item.customer?.name || (
+            <span className="text-muted-foreground">-</span>
+          )}
+        </div>
       ),
     },
     {

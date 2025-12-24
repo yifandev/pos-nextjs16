@@ -1,4 +1,4 @@
-import { POSSystemUpdated } from "@/components/features/cashier/pos-system";
+import { POSSystem } from "@/components/features/cashier/pos-system";
 
 export default function CashierOrderPage() {
   return (
@@ -7,7 +7,7 @@ export default function CashierOrderPage() {
         <h1 className="text-3xl font-bold tracking-tight">Point of Sale</h1>
         <p className="text-muted-foreground">Buat transaksi penjualan baru</p>
       </div>
-      <POSSystemUpdated />
+      <POSSystem />
     </div>
   );
 }

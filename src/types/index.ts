@@ -3,6 +3,31 @@ import { Prisma } from "@/generated/prisma/client";
 import { z } from "zod";
 import { productSchema } from "@/lib/validations";
 
+// Payment types
+export type PaymentMethod = "cash" | "qris" | "transfer";
+export type PaymentStatus = "idle" | "processing" | "success" | "failed";
+
+export type PaymentData = {
+  method: PaymentMethod;
+  paid: number;
+  change: number;
+  reference?: string;
+};
+
+export type DigitalPaymentResponse = {
+  success: boolean;
+  data?: {
+    qrisUrl?: string;
+    qrisString?: string;
+    vaNumber?: string;
+    bank?: string;
+    grossAmount: number;
+    transactionId: string;
+    expiryTime?: Date;
+  };
+  error?: string;
+};
+
 // User types
 export type UserWithRelations = Prisma.UserGetPayload<{
   include: {
@@ -108,7 +133,6 @@ export type PurchaseOrderWithDetails = Prisma.PurchaseOrderGetPayload<{
   };
 }>;
 
-// Sale types
 export type SaleWithDetails = Prisma.SaleGetPayload<{
   include: {
     cashier: {
@@ -155,7 +179,7 @@ export type ShiftWithUser = Prisma.ShiftGetPayload<{
   };
 }>;
 
-// Form types - DIPERBAIKI: gunakan z.infer
+// Form types
 export type CategoryFormData = {
   name: string;
   description?: string;
@@ -186,9 +210,10 @@ export type PurchaseOrderFormData = {
   }[];
 };
 
+// UPDATE: Gunakan PaymentMethod type
 export type SaleFormData = {
   customerId?: string;
-  paymentType: "cash" | "qris" | "transfer";
+  paymentType: PaymentMethod;
   paid: number;
   items: {
     productId: string;
@@ -203,3 +228,11 @@ export type ActionResponse<T = unknown> = {
   error?: string;
   message?: string;
 };
+
+// Bank config types
+export interface BankConfig {
+  value: string;
+  label: string;
+  fullName: string;
+  icon?: string;
+}
